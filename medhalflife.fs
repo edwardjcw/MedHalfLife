@@ -1,9 +1,8 @@
-
 open System
 type Time = 
     | Absolute of DateTime
     | Relative of (DateTime -> DateTime)
-type Dose = {origin:Time; amount:float; half_life:float}
+type Dose = {origin:Time; amount:float; t_max:float; half_life:float}
 
 type Concentration() =
 
@@ -15,8 +14,11 @@ type Concentration() =
             if t current_time < DateTime.MinValue ||
                 t d.origin > t current_time ||
                 d.half_life <= 0.0 ||
-                d.amount < 0.0 then 0.0
-            else d.amount * (0.5)**(((t current_time) - (t d.origin)).TotalHours/d.half_life)
+                d.amount < 0.0 || d.t_max < 0.0 then 0.0
+            else if ((t current_time) - (t d.origin)).TotalHours > d.t_max then
+                let c_max = (t d.origin).AddHours(d.t_max)
+                d.amount * (0.5)**(((t current_time) - c_max).TotalHours/d.half_life)
+            else d.amount * ((t current_time) - (t d.origin)).TotalHours/d.t_max
 
     static member At (current_time : Time) (doses : Dose option list) : float =
         doses
@@ -35,14 +37,15 @@ type Concentration() =
             | (false, _)  -> Absolute DateTime.MinValue
             | (true, d) -> Absolute d             
 
-let dose1 = Some {origin=Concentration.Time("9:30"); amount=15.0; half_life=2.0}
-let dose2 = Some {origin=Concentration.Time("12:24"); amount=10.0; half_life=2.0}
-let dose3 = Some {origin=Concentration.Time("15:38"); amount=10.0; half_life=2.0}
-let dose4 = None // Some {origin=Concentration.Time("18:10"); amount=10.0; half_life=2.0}
+let normalDose = {origin=Absolute DateTime.MinValue; amount=20.0; t_max=2.1; half_life=3.0}
+
+let dose1 = Some {normalDose with origin=Concentration.Time("7:45"); amount=20.0}
+let dose2 = Some {normalDose with origin=Concentration.Time("10:27"); amount=10.0}
+let dose3 = Some {normalDose with origin=Concentration.Time("13:45"); amount=10.0}
+let dose4 = Some {normalDose with origin=Concentration.Time("16:03"); amount=5.0}
 let dose5 = None // Some {origin=Concentration.Time("20:24"); amount=5.0; half_life=2.0}
 let doses : Dose option list = [dose1; dose2; dose3; dose4; dose5]
 
 let current = Concentration.At (Absolute DateTime.Now) doses
 
 System.Console.WriteLine("{0:0.##0}", Concentration.At (Absolute DateTime.Now) doses)
-//System.Console.ReadKey() |> ignore
