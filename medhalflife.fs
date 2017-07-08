@@ -20,8 +20,8 @@ type Time = Absolute of DateTime
 [<NoComparison>]
 type Dose = {origin:Time; amount:float; t_max:float; half_life:float} with
     member this.ShortString = 
-        let e (Absolute d) = d.ToShortTimeString()
-        e this.origin + this.amount.ToString() 
+        let e (Absolute d) = d.ToString()
+        e this.origin + "=" + this.amount.ToString() 
     override this.GetHashCode() =
         hash this.origin
     override this.Equals(b) =
@@ -151,7 +151,7 @@ type Scanner() =
             let input = Console.ReadLine()
             let interpretedInput = Scanner.Interpret input doses'
             match interpretedInput with
-            | Exit -> Concentration.Save "medhalflife.bin" doses'; yield ()
+            | Exit -> yield doses'
             | Error s -> printfn "%A" s; yield! looper doses'
             | Reset -> printfn "Reset complete"; yield! looper []
             | Show s -> printfn "%A" s; yield! looper doses'
@@ -191,7 +191,14 @@ type Scanner() =
 
 [<EntryPoint>]
 let main argv = 
-    match argv.[0].ToLower() with
-    | "-load" -> "medhalflife.bin" |> Concentration.Load |> Scanner.Start |> Seq.last |> ignore
+    let fullProcess input = 
+        input
+        |> Concentration.Load 
+        |> Scanner.Start 
+        |> Seq.last 
+        |> Concentration.Save input       
+    match argv with
+    | [|"-load"|] -> "medhalflife.bin" |> fullProcess
+    | [|"-load"; n|] -> n |> fullProcess
     | _ -> [] |> Scanner.Start |> Seq.last |> ignore
     0
