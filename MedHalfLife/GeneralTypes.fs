@@ -32,3 +32,5 @@ type Commands =
     | Reset 
     | Error of String
     | Exit
+    | Help of String
+    | Example of String

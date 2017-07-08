@@ -2,6 +2,7 @@
 
 open GeneralTypes
 open Concentration
+open Help
 open System
 
 type Scanner() =
@@ -36,18 +37,22 @@ type Scanner() =
             rest
             |> List.map parseDose
             |> Test 
-        | ["add"] -> Error "you must enter time=dose_amount to add"
+        | ["add"] -> Error "you must enter time=dose_amount to add; see help"
         | "add"::rest ->
             rest
             |> List.map parseDose
             |> Add
-        | ["remove"] -> Error "you must enter time to remove"
+        | ["remove"] -> Error "you must enter time to remove; see help"
         | "remove"::rest ->
             rest
             |> List.map parseDose
             |> Remove
         | ["list"] ->  doses |> Concentration.ToString  |> Show
         | ["reset"] -> Reset
+        | ["help"] -> Commands.Help ""
+        | ["help"; h] -> Commands.Help h
+        | ["example"] -> Error "you must enter command get get example; see help"
+        | ["example"; e] -> Example e
         | _ -> Error "enter a valid command"
 
     static member Start (doses : Dose option list) =
@@ -59,6 +64,8 @@ type Scanner() =
             | Error s -> printfn "%A" s; yield! looper doses'
             | Reset -> printfn "Reset complete"; yield! looper []
             | Show s -> printfn "%A" s; yield! looper doses'
+            | Help h -> Help.Show h; yield! looper doses'
+            | Example e -> Help.Example e; yield! looper doses'
             | Remove d -> 
                 let exclude = 
                     d

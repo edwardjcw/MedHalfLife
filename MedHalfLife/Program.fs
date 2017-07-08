@@ -3,7 +3,9 @@
 
 open GeneralTypes
 open Concentration
+open Help
 open Scanner
+
 
 [<EntryPoint>]
 let main argv = 
@@ -14,6 +16,7 @@ let main argv =
         |> Seq.last 
         |> Concentration.Save input       
     match argv with
+    | [|"-?"|] -> Help.Show ""
     | [|"-load"|] -> "medhalflife.bin" |> fullProcess
     | [|"-load"; n|] -> n |> fullProcess
     | _ -> [] |> Scanner.Start |> Seq.last |> ignore
