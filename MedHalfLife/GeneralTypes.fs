@@ -28,7 +28,7 @@ type Commands =
     | Test of DoseInput list
     | Add of DoseInput list
     | Remove of DoseInput list
-    | WhenMax
+    | WhenMax of DoseInput list
     | Show of string
     | Reset 
     | Error of String

@@ -57,7 +57,13 @@ type Help() =
         let exampleCommand =
             @"example [command] provides examples for the test, add, and remove commands."
         let whenMaxCommand =
-            @"whenmax determines the max concentration amount and time based on current doses."
+            @"whenmax determines the max concentration amount and time based on current doses.
+            1. whenmax by itself determines the max amount and time on current doses.
+            2. whenmax [dose] determines the max amount and time with the dose added in.
+            [dose] is in the format [time]=[amount]
+            [time] is either full datetime or just time (and current date is used)
+            [amount] is the amount of the dose
+            NOTE: multiple doses are allowed, separate by space"
         match t with
         | "" -> 
             [intro; 
@@ -111,11 +117,17 @@ type Help() =
             ::: This command removes any dose with those two times of today.";
             "remove \"7/7/2017 10:50\"
             ::: This command removes any dose that at that time and date."]
+        let whenMaxExamples = [
+            @"whenmax 10:50=20
+            ::: This command determine the max concentration amount and time as if dose added in.";
+            @"whenmax
+            ::: This command determine the max concentration amount and time using just current doses."]
         let makeReady x = x |> String.concat "\n"
         match e with
         | "test" -> testExamples |> makeReady
         | "add" -> addExamples |> makeReady
         | "remove" -> removeExamples |> makeReady
+        | "whenmax" -> whenMaxExamples |> makeReady
         | _ -> "no examples available"
 
     static member Example e =
