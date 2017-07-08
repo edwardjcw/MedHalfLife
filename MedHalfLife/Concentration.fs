@@ -25,6 +25,15 @@ type Concentration() =
         doses
         |> List.fold (fun level dose -> (calculate current_time dose) + level) 0.0
     
+    static member WhenMax (doses : Dose option list) : (Time * float) option =
+        let t (Absolute d) = d
+        let lastDose = if doses.Length > 0 then doses |> List.last else None
+        match lastDose with
+        | Some d -> 
+            let time = (t d.origin).AddHours(d.t_max) |> Absolute
+            (time, (Concentration.At time doses)) |> Some
+        | None -> None
+
     static member Time (input : string) : Time =
         match input.Contains(":") with
         | false -> 
@@ -60,4 +69,4 @@ type Concentration() =
         doses
         |> List.choose (id)
         |> List.map (fun x -> x.ShortString)
-        |> String.concat " "
+        |> String.concat "\n"

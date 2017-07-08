@@ -47,6 +47,7 @@ type Scanner() =
             rest
             |> List.map parseDose
             |> Remove
+        | ["whenmax"] -> WhenMax
         | ["list"] ->  doses |> Concentration.ToString  |> Show
         | ["reset"] -> Reset
         | ["help"] -> Commands.Help ""
@@ -96,6 +97,7 @@ type Scanner() =
                     results
                     |> List.iter (fun x-> System.Console.WriteLine("{0:0.##0}", x))
                     yield! looper doses'
+            | WhenMax -> doses' |> Concentration.WhenMax |> printfn "%A"; yield! looper doses'
         }
         looper doses
 

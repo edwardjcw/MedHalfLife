@@ -56,9 +56,22 @@ type Help() =
             @"reset clears all the doses taken."
         let exampleCommand =
             @"example [command] provides examples for the test, add, and remove commands."
+        let whenMaxCommand =
+            @"whenmax determines the max concentration amount and time based on current doses."
         match t with
         | "" -> 
-            [intro; purpose; instructions; internalCommands; helpCommand; testCommand; addCommand; removeCommand; listCommand; resetCommand; exampleCommand] 
+            [intro; 
+            purpose; 
+            instructions; 
+            internalCommands; 
+            helpCommand; 
+            testCommand; 
+            addCommand; 
+            removeCommand; 
+            listCommand; 
+            resetCommand; 
+            exampleCommand;
+            whenMaxCommand] 
             |> String.concat "\n"
         | "list" -> listCommand
         | "remove" -> removeCommand
@@ -67,6 +80,7 @@ type Help() =
         | "help" -> helpCommand
         | "reset" -> resetCommand
         | "example" -> exampleCommand
+        | "whenmax" -> whenMaxCommand
         | _ -> "invalid help command."
 
     static let example e =
