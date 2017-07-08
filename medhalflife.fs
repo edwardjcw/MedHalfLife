@@ -16,10 +16,18 @@ open System.Runtime.Serialization
 
 type Time = Absolute of DateTime
 
+[<CustomEquality>]
+[<NoComparison>]
 type Dose = {origin:Time; amount:float; t_max:float; half_life:float} with
     member this.ShortString = 
         let e (Absolute d) = d.ToShortTimeString()
         e this.origin + this.amount.ToString() 
+    override this.GetHashCode() =
+        hash this.origin
+    override this.Equals(b) =
+        match b with
+        | :? Dose as d -> this.origin = d.origin
+        | _ -> false
 
 type Concentration() =
 
@@ -55,7 +63,7 @@ type Concentration() =
             | (true, d) -> Absolute d       
 
     static member Load (input : string) : Dose option list =
-        if input |> System.IO.File.Exists then 
+        if input |> File.Exists then 
             let binFormatter = Formatters.Binary.BinaryFormatter()
             let stream callback (x : byte array)  = 
                 use resource = new MemoryStream(x)
@@ -65,6 +73,12 @@ type Concentration() =
             |> (stream binFormatter.Deserialize)
             :?> Dose option list
         else []
+
+    static member Save (input : string) (doses : Dose option list) =
+        let binFormatter = Formatters.Binary.BinaryFormatter()
+        use stream = new MemoryStream()
+        binFormatter.Serialize(stream, doses)
+        File.WriteAllBytes(input, stream.ToArray())
 
     static member ToString (doses : Dose option list) : string =
         doses
@@ -91,6 +105,11 @@ type Scanner() =
     static let normalDose = 
         {origin=Absolute DateTime.MinValue; amount=20.0; t_max=2.1; half_life=3.0}
 
+    static let (|Dosing|MeasuredTime|Problem|) = function
+        | Dose _ -> Dosing
+        | TimeAt _ -> MeasuredTime
+        | Nothing -> Problem
+
     static let parseDose (input : string) =
         let input' = input.Split('=') |> Array.toList
         match input' with
@@ -107,8 +126,8 @@ type Scanner() =
     static member Interpret (input : string) (doses : Dose option list) =
         let input' = input.Split(' ') |> Array.toList
         match input' with
-        | [] -> Exit
-        | ["test"] -> Error "you must enter time=dose_amount to test"
+        | [] | [""] -> Exit
+        | ["test"] -> Test []
         | "test"::rest -> 
             rest
             |> List.map parseDose
@@ -128,18 +147,47 @@ type Scanner() =
         | _ -> Error "enter a valid command"
 
     static member Start (doses : Dose option list) =
-        let rec looper doses' = seq{
+        let rec looper doses' = seq {
             let input = Console.ReadLine()
             let interpretedInput = Scanner.Interpret input doses'
             match interpretedInput with
-            | Exit -> yield ()
+            | Exit -> Concentration.Save "medhalflife.bin" doses'; yield ()
             | Error s -> printfn "%A" s; yield! looper doses'
             | Reset -> printfn "Reset complete"; yield! looper []
+            | Show s -> printfn "%A" s; yield! looper doses'
             | Remove d -> 
-                d
-                |> List.map 
-                //stopped here ... remove, add, test, and save left
+                let exclude = 
+                    d
+                    |> List.map (fun x -> 
+                        match x with 
+                        | Dose y -> Some y 
+                        | TimeAt y -> Some {normalDose with origin=y} 
+                        | Nothing -> None)
+                yield! looper (List.except exclude doses')
+            | Add d -> 
+                let addition =
+                    d
+                    |> List.map (function Dose y -> Some y | _ -> None)
+                yield! looper (doses'@addition)
+            | Test d ->
+                let doses'' = 
+                    d
+                    |> List.map (function Dose y -> Some y | _ -> None)
+                    |> (fun x -> doses'@x)
+                let times =
+                    d
+                    |> List.map (function TimeAt y -> Some y | _ -> None)
+                    |> List.choose (id)
+                match times with
+                | [] -> System.Console.WriteLine("{0:0.##0}", (Concentration.At (Absolute DateTime.Now)) doses''); yield! looper doses'
+                | t -> 
+                    let results = t |> List.map (fun x -> Concentration.At x doses'')
+                    results
+                    |> List.iter (fun x-> System.Console.WriteLine("{0:0.##0}", x))
+                    yield! looper doses'
         }
+        looper doses
+        
 
 [<EntryPoint>]
 let main argv = 
@@ -147,16 +195,3 @@ let main argv =
     | "-load" -> "medhalflife.bin" |> Concentration.Load |> Scanner.Start |> Seq.last |> ignore
     | _ -> [] |> Scanner.Start |> Seq.last |> ignore
     0
-
-// let normalDose = {origin=Absolute DateTime.MinValue; amount=20.0; t_max=2.1; half_life=3.0}
-
-// let dose1 = Some {normalDose with origin=Concentration.Time("12:18"); amount=20.0}
-// let dose2 = Some {normalDose with origin=Concentration.Time("15:18"); amount=10.0}
-// let dose3 = None //Some {normalDose with origin=Concentration.Time("13:45"); amount=10.0}
-// let dose4 = None //Some {normalDose with origin=Concentration.Time("16:03"); amount=5.0}
-// let dose5 = None // Some {origin=Concentration.Time("20:24"); amount=5.0; half_life=2.0}
-// let doses : Dose option list = [dose1; dose2; dose3; dose4; dose5]
-
-// let current = Concentration.At (Absolute DateTime.Now) doses
-
-// System.Console.WriteLine("{0:0.##0}", (Concentration.At (Concentration.Time("17:18")) doses))
