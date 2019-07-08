@@ -7,8 +7,12 @@ open System
 
 type Scanner() =
 
+    //https://www.mayoclinicproceedings.org/article/S0025-6196(11)64618-1/fulltext
+    static let normalHalfLife = 1.5 // 1.5 to 2.5
+    static let normalTMax = 3.0 // 1.0 to 3.0
+
     static let normalDose = 
-        {origin=Absolute DateTime.MinValue; amount=20.0; t_max=2.1; half_life=3.0}
+        {origin=Absolute DateTime.MinValue; amount=20.0; t_max=normalTMax; half_life=normalHalfLife}
 
     static let (|Dosing|MeasuredTime|Problem|) = function
         | Dose _ -> Dosing
