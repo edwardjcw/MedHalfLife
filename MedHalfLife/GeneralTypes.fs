@@ -1,8 +1,6 @@
 ﻿module GeneralTypes
 
 open System
-open System.IO
-open System.Runtime.Serialization
 
 type Time = Absolute of DateTime
 

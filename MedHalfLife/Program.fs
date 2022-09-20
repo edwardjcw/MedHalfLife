@@ -1,7 +1,6 @@
 ﻿// Learn more about F# at http://fsharp.org
 // See the 'F# Tutorial' project for more help.
 
-open GeneralTypes
 open Concentration
 open Help
 open Scanner

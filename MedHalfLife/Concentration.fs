@@ -1,9 +1,10 @@
 ﻿module Concentration
 
+open System.Text.Json
 open GeneralTypes
 open System
 open System.IO
-open System.Runtime.Serialization
+open Newtonsoft.Json
 
 type Concentration() =
 
@@ -18,7 +19,7 @@ type Concentration() =
                 d.amount < 0.0 || d.t_max < 0.0 then 0.0
             else if ((t current_time) - (t d.origin)).TotalHours > d.t_max then
                 let c_max = (t d.origin).AddHours(d.t_max)
-                d.amount * (0.5)**(((t current_time) - c_max).TotalHours/d.half_life)
+                d.amount * 0.5 **(((t current_time) - c_max).TotalHours/d.half_life)
             else d.amount * ((t current_time) - (t d.origin)).TotalHours/d.t_max
 
     static member At (current_time : Time) (doses : Dose option list) : float =
@@ -39,34 +40,27 @@ type Concentration() =
         | false -> 
             let hours = Double.TryParse(input)
             match hours with
-            | (false, _) -> Absolute DateTime.MinValue
-            | (true, h) -> Absolute (DateTime.MinValue.AddHours(h))
+            | false, _ -> Absolute DateTime.MinValue
+            | true, h -> Absolute (DateTime.MinValue.AddHours(h))
         | true -> 
             let dateTimeParsed = DateTime.TryParse input 
             match dateTimeParsed with
-            | (false, _)  -> Absolute DateTime.MinValue
-            | (true, d) -> Absolute d       
+            | false, _  -> Absolute DateTime.MinValue
+            | true, d -> Absolute d       
 
     static member Load (input : string) : Dose option list =
-        if input |> File.Exists then 
-            let binFormatter = Formatters.Binary.BinaryFormatter()
-            let stream callback (x : byte array)  = 
-                use resource = new MemoryStream(x)
-                callback resource
+        if input |> File.Exists then
             input
-            |> File.ReadAllBytes
-            |> (stream binFormatter.Deserialize)
-            :?> Dose option list
+            |> File.ReadAllText
+            |> JsonConvert.DeserializeObject<Dose option list>
         else []
 
     static member Save (input : string) (doses : Dose option list) =
-        let binFormatter = Formatters.Binary.BinaryFormatter()
-        use stream = new MemoryStream()
-        binFormatter.Serialize(stream, doses)
-        File.WriteAllBytes(input, stream.ToArray())
+        let serialized = JsonConvert.SerializeObject(doses)
+        File.WriteAllText(input, serialized)
 
     static member ToString (doses : Dose option list) : string =
         doses
-        |> List.choose (id)
+        |> List.choose id
         |> List.map (fun x -> x.ShortString)
         |> String.concat "\n"
